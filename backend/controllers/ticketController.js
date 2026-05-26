@@ -9,13 +9,12 @@ const createTicket = async (req, res) => {
         description,
         priority,
         department,
-        created_by,
-        recipientEmail
+        created_by
     } = req.body;
 
     let assigned_to = null;
 
-    // AUTO ROUTING
+    // AUTO ROUTING DATABASE
 
     if (department === "IT") {
         assigned_to = 1;
@@ -62,20 +61,27 @@ const createTicket = async (req, res) => {
 
             try {
 
-                await axios.post(
+                console.log("Sending ticket to n8n workflow...");
+
+                const response = await axios.post(
                     "https://stefania26017.app.n8n.cloud/webhook-test/send-ticket",
                     {
                         title,
                         description,
                         priority,
-                        department,
-                        recipientEmail
+                        department
                     }
                 );
 
-            } catch (emailError) {
+                console.log("n8n response:", response.data);
 
-                console.log(emailError);
+            } catch (workflowError) {
+
+                console.log(
+                    "n8n workflow error:"
+                );
+
+                console.log(workflowError.message);
             }
 
             res.json({
@@ -94,6 +100,7 @@ const getTickets = (req, res) => {
         FROM tickets
         LEFT JOIN users
         ON tickets.assigned_to = users.id
+        ORDER BY tickets.id DESC
     `;
 
     db.query(sql, (err, result) => {
