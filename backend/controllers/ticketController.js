@@ -14,17 +14,20 @@ const createTicket = async (req, res) => {
 
     let assigned_to = null;
 
-    // AUTO ROUTING DATABASE
+    // AUTO ASSIGN
 
     if (department === "IT") {
+
         assigned_to = 1;
     }
 
     else if (department === "HR") {
+
         assigned_to = 2;
     }
 
     else if (department === "NETWORK") {
+
         assigned_to = 3;
     }
 
@@ -59,11 +62,11 @@ const createTicket = async (req, res) => {
                 return res.status(500).json(err);
             }
 
+            // SEND TO N8N
+
             try {
 
-                console.log("Sending ticket to n8n workflow...");
-
-                const response = await axios.post(
+                await axios.post(
                     "https://stefania26017.app.n8n.cloud/webhook-test/send-ticket",
                     {
                         title,
@@ -73,25 +76,25 @@ const createTicket = async (req, res) => {
                     }
                 );
 
-                console.log("n8n response:", response.data);
-
             } catch (workflowError) {
 
                 console.log(
-                    "n8n workflow error:"
+                    workflowError.message
                 );
-
-                console.log(workflowError.message);
             }
 
             res.json({
-                message: "Ticket created successfully"
+                message:
+                    "Ticket created successfully"
             });
         }
     );
 };
 
 const getTickets = (req, res) => {
+
+    const department =
+        req.params.department;
 
     const sql = `
         SELECT
@@ -100,18 +103,24 @@ const getTickets = (req, res) => {
         FROM tickets
         LEFT JOIN users
         ON tickets.assigned_to = users.id
+        WHERE tickets.department = ?
         ORDER BY tickets.id DESC
     `;
 
-    db.query(sql, (err, result) => {
+    db.query(
+        sql,
+        [department],
 
-        if (err) {
+        (err, result) => {
 
-            return res.status(500).json(err);
+            if (err) {
+
+                return res.status(500).json(err);
+            }
+
+            res.json(result);
         }
-
-        res.json(result);
-    });
+    );
 };
 
 module.exports = {
